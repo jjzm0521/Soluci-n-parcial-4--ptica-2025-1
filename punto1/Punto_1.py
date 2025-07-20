@@ -154,7 +154,7 @@ class FraunhoferDiffraction:
         return X, Y, intensity
     
     def create_aperture_pattern(self):
-        """Creates the pattern of the original aperture."""
+        """crear el patrón de apertura basado en los parámetros."""
         range_val = self.params['aperture_range']
         x = np.linspace(-range_val, range_val, self.aperture_grid_size)
         y = np.linspace(-range_val, range_val, self.aperture_grid_size)
