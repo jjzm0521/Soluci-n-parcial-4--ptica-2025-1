@@ -191,7 +191,7 @@ class FraunhoferDiffraction:
             'a': {'label': 'a (mm)', 'range': (0.0, 2), 'format': '%.2f', 'ax': self.fig.add_subplot(gs_left[7])},
             'b': {'label': 'b (mm)', 'range': (0.0, 2), 'format': '%.2f', 'ax': self.fig.add_subplot(gs_left[8])},
             'R1': {'label': 'R₁ (mm)', 'range': (0, 1), 'format': '%.2f', 'ax': self.fig.add_subplot(gs_left[9])},
-            'R2': {'label': 'R₂ (mm)', 'range': (0.1, 2), 'format': '%.2f', 'ax': self.fig.add_subplot(gs_left[10])},
+            'R2': {'label': 'R₂ (mm)', 'range': (0, 2), 'format': '%.2f', 'ax': self.fig.add_subplot(gs_left[10])},
             'z': {'label': 'z (m)', 'range': (0.5, 3), 'format': '%.1f', 'ax': self.fig.add_subplot(gs_left[11])},
             'range': {'label': 'Rango (mm)', 'range': (2, 20), 'format': '%.1f', 'ax': self.fig.add_subplot(gs_left[12])}
         }
