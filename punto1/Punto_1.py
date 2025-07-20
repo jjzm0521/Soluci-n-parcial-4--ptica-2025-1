@@ -8,21 +8,21 @@ import matplotlib.colors as mcolors
 class FraunhoferDiffraction:
     def __init__(self):
         """
-        Initializes the simulation parameters and sets up the plot.
+        Parametros iniciales del sistema y configuración de la interfaz gráfica.
         """
-        # System parameters (default values)
+        # Sistema de parámetros
         self.params = {
-            'lambda': 550e-9,      # Wavelength (m) - default green
-            'D': 2e-3,            # Distance between apertures (m)
-            'a': 0.5e-3,          # Width of the rectangle (m)
-            'b': 0.5e-3,          # Height of the rectangle (m)
-            'R1': 0.2e-3,         # Inner radius of the annulus (m)
-            'R2': 0.8e-3,         # Outer radius of the annulus (m)
-            'z': 1,               # Distance to the observation plane (m)
-            'n': 1,               # Refractive index
-            'I_source': 1,        # Source intensity
-            'range': 5e-3,        # Observation range (m)
-            'aperture_range': 2e-3 # Range for displaying the original aperture
+            'lambda': 550e-9,      # longuitud de onda (m)
+            'D': 2e-3,             # Distancia entre aperturas (m)
+            'a': 0.5e-3,          # ancho del rectángulo (m)
+            'b': 0.5e-3,          # alto del rectángulo (m)
+            'R1': 0.2e-3,         # radio interno del anillo (m)
+            'R2': 0.8e-3,         # radio externo del anillo (m)
+            'z': 1,               # distancia de observación (m)
+            'n': 1,               # indice de refracción del medio (sin unidades)
+            'I_source': 1,        # intensidad de la fuente (sin unidades)
+            'range': 5e-3,        # rango de visualización (m)
+            'aperture_range': 2e-3 # rango de la apertura (m)
         }
         
         # Grid configuration
@@ -31,8 +31,9 @@ class FraunhoferDiffraction:
         self.setup_plot()
     
     def wavelength_to_rgb(self, wavelength_nm):
-        """Converts wavelength in nm to an RGB color tuple."""
-        # Based on a standard algorithm for wavelength to RGB conversion.
+        """convierte una longitud de onda en nm a un color RGB."""
+        # basado en el modelo de color RGB para longitudes de onda visibles
+        # rango visible: 380 nm a 780 nm
         wavelength = wavelength_nm
         
         if 380 <= wavelength < 440:
@@ -60,9 +61,9 @@ class FraunhoferDiffraction:
             g = 0.0
             b = 0.0
         else:
-            r, g, b = 0.0, 0.0, 0.0 # Outside visible spectrum
+            r, g, b = 0.0, 0.0, 0.0 # espectro fuera del rango visible
 
-        # Adjust intensity for extreme wavelengths to make them dimmer
+        # ajuste de brillo basado en la longitud de onda
         if 380 <= wavelength < 420:
             factor = 0.3 + 0.7 * (wavelength - 380) / (420 - 380)
         elif 645 < wavelength <= 780:
@@ -73,25 +74,25 @@ class FraunhoferDiffraction:
         return (r * factor, g * factor, b * factor)
     
     def create_wavelength_colormap(self, wavelength_nm):
-        """Creates a colormap from black to the specified wavelength color."""
+        """crea un colormap personalizado basado en la longitud de onda."""
         base_color = self.wavelength_to_rgb(wavelength_nm)
         return mcolors.LinearSegmentedColormap.from_list(
             "custom_map", [(0, 0, 0), base_color]
         )
     
     def sinc(self, x):
-        """Numerically stable sinc function."""
+        """function sinc(x) = sin(x)/x, with a limit at x=0."""
         return np.where(np.abs(x) < 1e-10, 1, np.sin(x) / x)
     
     def bessel_j1_normalized(self, x):
-        """Normalized Bessel function of the first kind: J1(x)/x. Reverted to original."""
+        """función para calcular el Bessel de primer orden normalizado."""
         return np.where(np.abs(x) < 1e-10, 0.5, j1(x) / x)
     
     def calculate_intensity(self, x, y):
         """
-        Calculates the intensity based on the original Fraunhofer diffraction equation provided by the user.
+        Calculo de la intentisdad en función de la ecuación encontrada.
         """
-        # Parameters
+        # parametros del sistema
         lambda_val = self.params['lambda']
         D = self.params['D']
         a = self.params['a']
@@ -102,38 +103,40 @@ class FraunhoferDiffraction:
         n = self.params['n']
         I_source = self.params['I_source']
         
-        # Wavenumber
+        # Constante de onda
         k = 2 * np.pi / lambda_val
         
-        # Radial coordinate
+        #coordenadas polares
         r = np.sqrt(x**2 + y**2)
         
-        # Arguments for sinc functions
+        # argumentos para la función sinc
         beta_x = k * a * x / z
         beta_y = k * b * y / z
         
-        # Rectangle term
+
         sinc_x = self.sinc(beta_x / 2)
         sinc_y = self.sinc(beta_y / 2)
         
-        # Annulus (ring) terms
+        # Calculo del anillo
         kr = k * r
-        kr_safe = np.where(r > 1e-10, kr, 1e-10) # Avoid division by zero
+        kr_safe = np.where(r > 1e-10, kr, 1e-10) # evitar división por cero
         
         bessel_R1 = np.where(R1 > 0, R1**2 * self.bessel_j1_normalized(kr_safe * R1 / z), 0)
         bessel_R2 = np.where(R2 > 0, R2**2 * self.bessel_j1_normalized(kr_safe * R2 / z), 0)
         
-        # Full intensity equation from original code
+        # intensidad total
+        # Se calcula la intensidad total como la suma de los términos
         # Term 1: rectangle^2
         term1 = (b**2 * a**2) * sinc_x**2 * sinc_y**2
         
-        # Term 2: annulus^2
+        # Term 2: anillo^2
         term2 = (4 * np.pi)**2 * (bessel_R2 - bessel_R1)**2
         
         # Term 3: interference
         phase = k * D * y / z
         rect_field_term = (b * a) * sinc_x * sinc_y
         ring_field_term = (4 * np.pi) * (bessel_R2 - bessel_R1)
+        
         term3 = 2 * rect_field_term * ring_field_term * np.cos(phase)
         
         # Total intensity
@@ -185,8 +188,8 @@ class FraunhoferDiffraction:
         slider_defs = {
             'lambda': {'label': 'λ (nm)', 'range': (400, 700), 'format': '%.0f', 'ax': self.fig.add_subplot(gs_left[5])},
             'D': {'label': 'D (mm)', 'range': (0.5, 5), 'format': '%.2f', 'ax': self.fig.add_subplot(gs_left[6])},
-            'a': {'label': 'a (mm)', 'range': (0.1, 2), 'format': '%.2f', 'ax': self.fig.add_subplot(gs_left[7])},
-            'b': {'label': 'b (mm)', 'range': (0.1, 2), 'format': '%.2f', 'ax': self.fig.add_subplot(gs_left[8])},
+            'a': {'label': 'a (mm)', 'range': (0.0, 2), 'format': '%.2f', 'ax': self.fig.add_subplot(gs_left[7])},
+            'b': {'label': 'b (mm)', 'range': (0.0, 2), 'format': '%.2f', 'ax': self.fig.add_subplot(gs_left[8])},
             'R1': {'label': 'R₁ (mm)', 'range': (0, 1), 'format': '%.2f', 'ax': self.fig.add_subplot(gs_left[9])},
             'R2': {'label': 'R₂ (mm)', 'range': (0.1, 2), 'format': '%.2f', 'ax': self.fig.add_subplot(gs_left[10])},
             'z': {'label': 'z (m)', 'range': (0.5, 3), 'format': '%.1f', 'ax': self.fig.add_subplot(gs_left[11])},
